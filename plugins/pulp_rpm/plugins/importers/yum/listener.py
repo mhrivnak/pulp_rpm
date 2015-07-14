@@ -1,9 +1,9 @@
 import logging
-import shutil
 
 from nectar.listener import DownloadEventListener, AggregatingEventListener
 from pulp.common.plugins import importer_constants
 from pulp.plugins.util import verification
+from pulp.server.controllers import repository as repo_controller
 
 from pulp_rpm.common import constants
 from pulp_rpm.plugins.db import models
@@ -78,17 +78,11 @@ class ContentListener(DownloadEventListener):
         if isinstance(model, (models.RPM, models.SRPM)):
             self.metadata_files.add_repodata(model)
         # init unit, which is idempotent
-        unit = self.sync_conduit.init_unit(model.TYPE, model.unit_key, model.metadata,
-                                           model.relative_path)
-        # move to final location.
-        # we cannot use here shutil.move because it preserves all the file attributes,
-        # even the selinux labels from the the source directory, that has different label
-        # from the desination one.
-        # we dont't have to worry about the content from working directory as it gets cleaned up,
-        # when a task finishes.
-        shutil.copy(report.destination, unit.storage_path)
-        # save unit
-        self.sync_conduit.save_unit(unit)
+        model.set_content(report.destination)
+        model.save()
+
+        repo_controller.associate_single_unit(self.sync_conduit.repo, model)
+
         self.progress_report['content'].success(model)
         self.sync_conduit.set_progress(self.progress_report)
 
@@ -110,7 +104,7 @@ class ContentListener(DownloadEventListener):
         fails, the error is noted in this instance's progress report and the error is re-raised.
 
         :param model: domain model instance of the package that was downloaded
-        :type  model: pulp_rpm.plugins.db.models.RPM
+        :type  model: pulp_rpm.plugins.db.models.RpmBase
         :param report: report handed to this listener by the downloader
         :type  report: nectar.report.DownloadReport
 
@@ -122,13 +116,13 @@ class ContentListener(DownloadEventListener):
 
         try:
             with open(report.destination) as dest_file:
-                verification.verify_size(dest_file, model.metadata['size'])
+                verification.verify_size(dest_file, model.size)
 
         except verification.VerificationException, e:
             error_report = {
                 constants.UNIT_KEY: model.unit_key,
                 constants.ERROR_CODE: constants.ERROR_SIZE_VERIFICATION,
-                constants.ERROR_KEY_EXPECTED_SIZE: model.metadata['size'],
+                constants.ERROR_KEY_EXPECTED_SIZE: model.size,
                 constants.ERROR_KEY_ACTUAL_SIZE: e[0]
             }
             self.progress_report['content'].failure(model, error_report)
@@ -141,7 +135,7 @@ class ContentListener(DownloadEventListener):
         fails, the error is noted in this instance's progress report and the error is re-raised.
 
         :param model: domain model instance of the package that was downloaded
-        :type  model: pulp_rpm.plugins.db.models.RPM
+        :type  model: pulp_rpm.plugins.db.models.RpmBase
         :param report: report handed to this listener by the downloader
         :type  report: nectar.report.DownloadReport
 
@@ -153,24 +147,24 @@ class ContentListener(DownloadEventListener):
 
         try:
             with open(report.destination) as dest_file:
-                verification.verify_checksum(dest_file, model.unit_key['checksumtype'],
-                                             model.unit_key['checksum'])
+                verification.verify_checksum(dest_file, model.checksumtype,
+                                             model.checksum)
 
         except verification.VerificationException, e:
             error_report = {
-                constants.NAME: model.unit_key['name'],
+                constants.NAME: model.name,
                 constants.ERROR_CODE: constants.ERROR_CHECKSUM_VERIFICATION,
-                constants.CHECKSUM_TYPE: model.unit_key['checksumtype'],
-                constants.ERROR_KEY_CHECKSUM_EXPECTED: model.unit_key['checksum'],
+                constants.CHECKSUM_TYPE: model.checksumtype,
+                constants.ERROR_KEY_CHECKSUM_EXPECTED: model.checksum,
                 constants.ERROR_KEY_CHECKSUM_ACTUAL: e[0]
             }
             self.progress_report['content'].failure(model, error_report)
             raise
         except verification.InvalidChecksumType, e:
             error_report = {
-                constants.NAME: model.unit_key['name'],
+                constants.NAME: model.name,
                 constants.ERROR_CODE: constants.ERROR_CHECKSUM_TYPE_UNKNOWN,
-                constants.CHECKSUM_TYPE: model.unit_key['checksumtype'],
+                constants.CHECKSUM_TYPE: model.checksumtype,
                 constants.ACCEPTED_CHECKSUM_TYPES: verification.CHECKSUM_FUNCTIONS.keys()
             }
             self.progress_report['content'].failure(model, error_report)
