@@ -21,6 +21,7 @@ CONTAINER_REPORT = _('The content container reported: %(r)s for base URL: %(u)s'
 class Packages(object):
     """
     Package downloader.
+
     :ivar base_url: The repository base url.
     :type base_url: str
     :ivar units: An iterable of units to download.
@@ -67,18 +68,19 @@ class Packages(object):
     def get_requests(self):
         """
         Get requests for the units requested to be downloaded.
+
         :return: An iterable of: Request
         :rtype: iterable
         """
         for unit in self.units:
             if unit.base_url:
-                url = urljoin(unit.base_url, unit.file_name)
+                url = urljoin(unit.base_url, unit.filename)
             else:
-                url = urljoin(self.base_url, unit.file_name)
+                url = urljoin(self.base_url, unit.filename)
             # file_name = os.path.basename(unit.relative_path)
-            destination = os.path.join(self.dst_dir, unit.file_name)
+            destination = os.path.join(self.dst_dir, unit.filename)
             request = Request(
-                type_id=unit.unit_type_id,
+                type_id=unit._content_type_id,
                 unit_key=unit.unit_key,
                 url=url,
                 destination=destination)

@@ -220,7 +220,7 @@ def get_existing_units(model, unit_search_func):
     :return:    iterable of Unit instances that appear in the repository
     :rtype:     iterable of pulp.server.db.model.ContentUnit
     """
-    criteria = UnitAssociationCriteria([model.unit_type_id],
+    criteria = UnitAssociationCriteria([model._content_type_id],
                                        unit_fields=model.unit_key_fields)
     return unit_search_func(criteria)
 

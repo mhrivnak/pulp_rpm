@@ -44,9 +44,17 @@ class DistroFileListener(AggregatingEventListener):
 
 
 class ContentListener(DownloadEventListener):
+
     def __init__(self, sync_conduit, progress_report, sync_call_config, metadata_files):
         """
+        :param sync_conduit: sync conduit for the sync
+        :type sync_conduit: pulp.plugins.conduits.repo_sync.RepoSyncConduit
+        :param progress_report: progress report to write into
+        :type progress_report: dict
+        :param sync_call_config: call config for the sync
         :type sync_call_config: pulp.plugins.config.PluginCallConfig
+        :param metadata_files: metadata files object corresponding with the current sync
+        :type metadata_files: pulp_rpm.plugins.importers.yum.repomd.metadata.MetadataFiles
         """
         super(ContentListener, self).__init__()
         self.sync_conduit = sync_conduit
@@ -56,9 +64,10 @@ class ContentListener(DownloadEventListener):
 
     def download_succeeded(self, report):
         """
-        :param report:
+        The callback when a download succeeds.
+
+        :param report: the report for the succeeded download.
         :type  report: nectar.report.DownloadReport
-        :return:
         """
         model = report.data
 
@@ -83,15 +92,15 @@ class ContentListener(DownloadEventListener):
 
         repo_controller.associate_single_unit(self.sync_conduit.repo, model)
 
-        self.progress_report['content'].success(model)
+        self.progress_report['content'].success(model) # TODO consider that if an exception occurs before here maybe it shouldn't call success?
         self.sync_conduit.set_progress(self.progress_report)
 
     def download_failed(self, report):
         """
+        The callback when a download fails.
 
-        :param report:
+        :param report: the report for the failed download.
         :type  report: nectar.report.DownloadReport
-        :return:
         """
         model = report.data
         report.error_report['url'] = report.url
