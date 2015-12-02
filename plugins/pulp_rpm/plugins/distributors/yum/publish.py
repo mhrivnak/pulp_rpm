@@ -482,13 +482,13 @@ class PublishMetadataStep(platform_steps.UnitPublishStep):
             add_metadata_file_metadata(unit.unit_key['data_type'], link_path)
 
 
-class PublishDrpmStep(platform_steps.UnitPublishStep):
+class PublishDrpmStep(platform_steps.UnitModelPluginStep):
     """
     Publish Delta RPMS
     """
 
     def __init__(self, dist_step, **kwargs):
-        super(PublishDrpmStep, self).__init__(constants.PUBLISH_DELTA_RPMS_STEP, TYPE_ID_DRPM,
+        super(PublishDrpmStep, self).__init__(constants.PUBLISH_DELTA_RPMS_STEP, [models.DRPM],
                                               **kwargs)
         self.description = _('Publishing Delta RPMs')
         self.context = None
@@ -545,12 +545,12 @@ class PublishDrpmStep(platform_steps.UnitPublishStep):
                                            self.context.checksum)
 
 
-class PublishErrataStep(platform_steps.UnitPublishStep):
+class PublishErrataStep(platform_steps.UnitModelPluginStep):
     """
     Publish all errata
     """
     def __init__(self, **kwargs):
-        super(PublishErrataStep, self).__init__(constants.PUBLISH_ERRATA_STEP, TYPE_ID_ERRATA,
+        super(PublishErrataStep, self).__init__(constants.PUBLISH_ERRATA_STEP, [models.Errata],
                                                 **kwargs)
         self.context = None
         self.description = _('Publishing Errata')
