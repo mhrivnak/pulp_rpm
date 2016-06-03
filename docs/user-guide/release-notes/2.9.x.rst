@@ -14,4 +14,5 @@ New Features
   parsed on upload. ``pulp-admin`` also has upload, remove, and search support for 
   package_langpacks.
 * The yum distributor now uses the configured checksum type for all repo metadata.
-
+* The export distributor now uses the configured checksum type for all repo metadata. The pulp-admin
+  repo "create" and "update" commands now save the specified checksum type on both distributors.
