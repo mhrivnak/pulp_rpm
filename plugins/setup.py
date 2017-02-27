@@ -39,7 +39,7 @@ setup(
             'pulp_rpm = pulp_rpm.plugins.migrations'
         ],
         'pulp.server.db.migrations': [
-            'pulp_rpm = pulp_rpm.plugins.satmigrations'
+            'pulp_rpm_sat = pulp_rpm.plugins.satmigrations'
         ],
         'pulp.unit_models': [
             'rpm=pulp_rpm.plugins.db.models:RPM',
